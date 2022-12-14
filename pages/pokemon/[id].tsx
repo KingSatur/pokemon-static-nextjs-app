@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Layout } from "../../components/layouts";
 import { GetStaticProps, NextPage } from "next";
-import { pokeApi } from "../../api";
 import { PokemonDetailDto } from "../../interfaces";
 import { ParsedUrlQuery } from "querystring";
 import { Button, Card, Container, Grid, Image, Text } from "@nextui-org/react";
@@ -11,9 +10,6 @@ import { getPokemonInfo } from "../../utils/getPokemonData";
 
 interface Props {
   pokemon: PokemonDetailDto;
-}
-interface Params extends ParsedUrlQuery {
-  id: string;
 }
 
 const PokemonPage: NextPage<Props> = ({ pokemon }) => {
@@ -119,17 +115,31 @@ export async function getStaticPaths(ctx: any) {
 
   return {
     paths: pokemons.map((id) => ({ params: { id } })),
-    fallback: false,
+    // Incremental static generation
+    fallback: "blocking",
   };
 }
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { id } = params! as { id: string };
 
+  const pokemon = await getPokemonInfo(id);
+
+  if (!pokemon) {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false,
+      },
+    };
+  }
+
   return {
     props: {
-      pokemon: await getPokemonInfo(id),
+      pokemon,
     },
+    // Incremental static regeneration
+    revalidate: 86400,
   };
 };
 
