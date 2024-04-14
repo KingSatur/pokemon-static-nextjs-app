@@ -11,7 +11,6 @@ const CounterComponent = ({ value = 10 }: Props) => {
 
   return (
     <>
-      {" "}
       <span className="text-9xl">{counter}</span>
       <div className="flex">
         <button
