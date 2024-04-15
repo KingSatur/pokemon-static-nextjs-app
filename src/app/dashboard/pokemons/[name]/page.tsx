@@ -1,20 +1,27 @@
-import { Pokemon } from "@/src/pokemons";
+import { LocalPokemon, Pokemon, PokemonListResponse } from "@/src/pokemons";
 import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
 interface Props {
-  params: { id: string };
+  params: { name: string };
+}
+
+export async function generateStaticParams() {
+  const firstPokemonsNames = await getPokemonsInitialCall(151);
+  return firstPokemonsNames.map((pokemon) => ({ name: pokemon.name }));
+  // const firstPokemons = Array.from({ length: 151 }, (_, i) => i + 1);
+  // return firstPokemons.map((id) => ({ id: id.toString() }));
 }
 
 export async function generateMetadata({
-  params: { id },
+  params: { name },
 }: Props): Promise<Metadata> {
   try {
-    const { name } = await getPokemonData(parseInt(id));
+    const { name: nameFromApi, id } = await getPokemonData(name);
     return {
-      title: name ? `#${id} ${name} - Pokédex` : "Unkown pokemon",
-      description: name ? `Detail for ${name}` : "",
+      title: nameFromApi ? `#${id} ${nameFromApi} - Pokédex` : "Unkown pokemon",
+      description: nameFromApi ? `Detail for ${nameFromApi}` : "",
     };
   } catch (error) {
     return {
@@ -24,10 +31,29 @@ export async function generateMetadata({
   }
 }
 
-const getPokemonData = async (id: number): Promise<Pokemon> => {
+const getPokemonsInitialCall = async (
+  limit = 20,
+  offset = 0
+): Promise<LocalPokemon[]> => {
+  const data: PokemonListResponse = await (
+    await fetch(
+      `https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=${offset}`
+    )
+  ).json();
+
+  return data.results.map((pokemon: { name: string; url: string }) => ({
+    name: pokemon.name,
+    id: parseInt(pokemon.url.split("/").at(-2)!),
+  }));
+};
+
+const getPokemonData = async (name: string): Promise<Pokemon> => {
   try {
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`, {
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`, {
       cache: "force-cache",
+      next: {
+        revalidate: 60 * 60 * 24 * 7,
+      },
     });
     const data = await res.json();
     return data;
@@ -37,9 +63,9 @@ const getPokemonData = async (id: number): Promise<Pokemon> => {
 };
 
 export default async function PokemonDetailPage({
-  params: { id },
+  params: { name },
 }: Readonly<Props>) {
-  const pokemon = await getPokemonData(parseInt(id));
+  const pokemon = await getPokemonData(name);
 
   return (
     <div className="flex mt-5 flex-col items-center text-slate-800">
