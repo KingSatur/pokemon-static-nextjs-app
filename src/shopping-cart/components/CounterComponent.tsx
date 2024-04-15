@@ -8,13 +8,21 @@ interface Props {
   value?: number;
 }
 
+const getCounter = async (): Promise<any> => {
+  const response = await fetch("/api/counter");
+  const data = await response.json();
+  return data.count;
+};
+
 const CounterComponent = ({ value = 10 }: Props) => {
   const counter = useAppSelector((state) => state.counterReducer.count);
   const dispath = useAppDispatch();
 
   useEffect(() => {
-    dispath(initCounter(value));
-  }, [dispath, value]);
+    getCounter().then((data) => {
+      dispath(initCounter(data));
+    });
+  }, []);
 
   return (
     <>
