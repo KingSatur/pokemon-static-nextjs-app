@@ -1,2 +1,3 @@
-export * from "./Sidebar";
-export * from "./Simplewidget";
+export * from "./sidebar/Sidebar";
+export * from "./dashboard/Simplewidget";
+export * from "./dashboard/WidgetsGrid";
